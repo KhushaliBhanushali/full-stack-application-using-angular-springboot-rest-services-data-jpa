@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { RouterModule,Routes } from '@angular/router';
+import { RouterModule, Routes } from '@angular/router';
 import { DataTablesModule } from 'angular-datatables';
 
 import { AppComponent } from './app.component';
@@ -11,20 +11,25 @@ import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { NavbarComponent } from './components/navbar/navbar.component';
 import { HeaderComponent } from './components/header/header.component';
 import { ReactiveFormsModule } from '@angular/forms';
-import { HttpClientModule } from '@angular/common/http';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { CoursesInstructorComponent } from './components/courses-instructor/courses-instructor.component';
 import { CoursesStudentComponent } from './components/courses-student/courses-student.component';
+import { AuthenticationComponent } from './components/authentication/authentication.component';
+import { AuthInterceptorService } from './services/auth-interceptor.service';
+import { AuthGuardService } from './services/auth.guard.service';
+import { InstructorStudentGuardService } from './services/instructor-student.guard.service';
 
 
 const appRoutes: Routes = [
-  { path: '', component: CoursesComponent },
-  { path: 'students', component: StudentsComponent },
-  { path: 'courses', component: CoursesComponent },
-  { path: 'teachers', component: TeachersComponent },
-  { path: 'instructor-courses/:id', component: CoursesInstructorComponent },
-  { path: 'student-courses/:id', component: CoursesStudentComponent},
+  { path: '', component: AuthenticationComponent },
+  { path: 'students', component: StudentsComponent, canActivate: [AuthGuardService], data: { role: 'Admin' } },
+  { path: 'courses', component: CoursesComponent, canActivate: [AuthGuardService], data: { role: 'Admin' } },
+  { path: 'teachers', component: TeachersComponent, canActivate: [AuthGuardService], data: { role: 'Admin' } },
+  { path: 'instructor-courses/:id', component: CoursesInstructorComponent, canActivate: [AuthGuardService, InstructorStudentGuardService], data: { role: 'Instructor' } },
+  { path: 'student-courses/:id', component: CoursesStudentComponent, canActivate: [AuthGuardService, InstructorStudentGuardService], data: { role: 'Student' } },
   { path: 'navbar', component: NavbarComponent },
   { path: 'header', component: HeaderComponent },
+  { path: 'auth', component: AuthenticationComponent },
 
 ]
 
@@ -37,17 +42,22 @@ const appRoutes: Routes = [
     NavbarComponent,
     HeaderComponent,
     CoursesInstructorComponent,
-    CoursesStudentComponent
+    CoursesStudentComponent,
+    AuthenticationComponent
   ],
   imports: [
     BrowserModule,
-    RouterModule.forRoot(appRoutes, {enableTracing: false}),
+    RouterModule.forRoot(appRoutes, { enableTracing: false }),
     DataTablesModule,
     NgbModule,
     ReactiveFormsModule,
     HttpClientModule,
   ],
-  providers: [],
+  providers: [{
+    provide: HTTP_INTERCEPTORS,
+    useClass: AuthInterceptorService,
+    multi: true
+  }],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
